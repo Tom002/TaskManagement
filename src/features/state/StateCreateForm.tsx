@@ -1,7 +1,7 @@
 import React, { useContext, useState, FormEvent } from 'react'
 import { RouteComponentProps } from 'react-router';
 import TaskStore from '../../app/stores/taskStore';
-import { Grid, Form, Dropdown, Segment, Button } from 'semantic-ui-react';
+import { Grid, Form, Segment, Button } from 'semantic-ui-react';
 import { IState } from '../../app/models/IState';
 
 const StateCreateForm : React.FC<RouteComponentProps> = ({history}) => {
@@ -10,7 +10,7 @@ const StateCreateForm : React.FC<RouteComponentProps> = ({history}) => {
     const {createState} = taskStore;
 
     const [state, setState] = useState<IState>({
-        id: 0,
+        stateId: 0,
         name: ''
       });
     

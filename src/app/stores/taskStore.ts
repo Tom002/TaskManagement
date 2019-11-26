@@ -6,6 +6,8 @@ import { SyntheticEvent } from 'react';
 import { isUndefined } from 'util';
 import { createContext } from 'react';
 import { DropdownItemProps } from 'semantic-ui-react';
+import { toast } from 'react-toastify';
+import { history} from '../../index';
 
 configure({enforceActions: 'always'})
 
@@ -25,9 +27,9 @@ class TaskStore {
 
     @computed get statesForDropdown(): DropdownItemProps[] {
         return Array.from(this.stateRegistry.values()).map(a => ({
-            key : a.id,
+            key : a.stateId,
             text : a.name,
-            value : a.id
+            value : a.stateId
         }));
     }
 
@@ -37,25 +39,25 @@ class TaskStore {
     }
 
     @action taskPriorityChange = (movedItem: ITask, oldIndex: number, newIndex: number) => {
-        // TODO API Update
         this.taskRegistry.set(movedItem.id, {...movedItem, ["order"]: newIndex+1})
+        let updateItem: ITask | undefined = this.taskRegistry.get(movedItem.id);
+        if(updateItem) {
+            this.editTask(updateItem);
+        }
         if(oldIndex > newIndex) {
             for (const task of this.taskRegistry.values()) {
-                    if((task.order-1) >= newIndex && (task.order-1) < oldIndex && task.id != movedItem.id){
-                        // TODO API Update
+                    if((task.order-1) >= newIndex && (task.order-1) < oldIndex && task.id !== movedItem.id){
                         this.taskRegistry.set(task.id, {...task, ["order"]: task.order+1})
                     }
                 }
             }
         else if(newIndex > oldIndex) {
             for (const task of this.taskRegistry.values()) {
-                if((task.order-1) <= newIndex && (task.order-1) > oldIndex && task.id != movedItem.id){
-                    // TODO API Update
+                if((task.order-1) <= newIndex && (task.order-1) > oldIndex && task.id !== movedItem.id){
                     this.taskRegistry.set(task.id, {...task, ["order"]: task.order-1})
                 }
             }
         }
-        
     }
 
     @action loadTasks = async() => {
@@ -82,7 +84,7 @@ class TaskStore {
             const states = await agent.States.list();
             runInAction('loading states', () => {
                 states.forEach(state => {
-                    this.stateRegistry.set(state.id, state);
+                    this.stateRegistry.set(state.stateId, state);
                 })
                 this.loading = true;
             })
@@ -97,17 +99,18 @@ class TaskStore {
     @action createState = async(state: IState) => {
         this.submitting = true;
         try {
-            // TODO
-            //let createdId = await agent.States.create(state);
-            let createdId = Math.max(...Array.from(this.stateRegistry.values()).map(a => a.id))+1;
+            let response: IState = await agent.States.create(state);
+            let createdId = response.stateId;
             runInAction('creating state',() => {
-                state.id = createdId;
+                state.stateId = createdId;
                 this.stateRegistry.set(createdId, state);
             })
+            
         } catch (error) {
             runInAction('creating task error',() => {
                 console.log(error);
                 this.submitting = false;
+                toast.error('Problem creating state');
             })
         }
     }
@@ -116,8 +119,6 @@ class TaskStore {
         this.loading = true;
         try {
             let tasksWithState = Array.from(this.taskRegistry.values()).filter(a => a.stateId === stateId);
-            console.log(stateId);
-            console.log(tasksWithState);
                 for (const task of tasksWithState) {
                     this.taskRegistry.delete(task.id);
                 }
@@ -130,6 +131,7 @@ class TaskStore {
             runInAction('deleting status error', () => {
                 console.log(error);
                 this.loading = true;
+                toast.error('Problem deleting state');
             })
         }
     }
@@ -137,15 +139,18 @@ class TaskStore {
     @action createTask = async (task: ITask) => {
         this.submitting = true;
         try {
-            let createdId = await agent.Tasks.create(task);
+            let created: ITask = await agent.Tasks.create(task);
+            let createdId = created.id;
             runInAction('creating task',() => {
                 task.id = createdId;
+                task.order = created.order;
                 this.taskRegistry.set(createdId, task);
             })
         } catch (error) {
             runInAction('creating task error',() => {
                 console.log(error);
                 this.submitting = false;
+                toast.error('Problem creating task');
             })
         }
     }
@@ -153,15 +158,17 @@ class TaskStore {
     @action editTask = async (task: ITask) => {
         this.submitting = true;
         try {
-            await agent.Tasks.update(task);
+            let response = await agent.Tasks.update(task);
+            let updatedTask = task;
             runInAction('edit task',() =>{
-                this.taskRegistry.set(task.id, task);
-                this.selectedTask = task;
+                this.taskRegistry.set(updatedTask.id, updatedTask);
+                this.selectedTask = updatedTask;
             })
         } catch (error) {
             runInAction('edit task error',() => {
                 console.log(error);
                 this.submitting = false;
+                toast.error('Problem editing task');
             })
         }
     }
@@ -192,13 +199,14 @@ class TaskStore {
                     console.log(error);
                     this.submitting = false;
                     this.target = 0;
+                    toast.error('Problem deleting task');
                 })
             }
         }
     }
 
     @action loadTask = async (id: number) => {
-        let task = this.taskRegistry.get(id);
+        let task: ITask | undefined = this.taskRegistry.get(id);
         if(task) {
             this.selectedTask = task;
         }
@@ -208,11 +216,15 @@ class TaskStore {
                 task = await agent.Tasks.details(id);
                 runInAction('getting single task',() => {
                     this.selectedTask = isUndefined(task) ? null : task;
+                    if(this.selectedTask && task) {
+                        this.selectedTask.deadline = new Date(task.deadline);
+                    }
                     this.loading = false;
                 })
             } catch (error) {
                 runInAction('error getting single task',() => {
                     this.loading = false; 
+                    toast.error('Problem loading task');
                 })
             }
         }

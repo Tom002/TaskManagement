@@ -46,10 +46,8 @@ const TaskPriority: React.FC = () => {
                             )
                         }
                         </Droppable>
-
                     </Grid.Column>
                 </DragDropContext>
-
             </Grid>
         </div>
     )

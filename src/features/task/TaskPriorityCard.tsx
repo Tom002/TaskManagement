@@ -3,7 +3,8 @@ import { ITask } from '../../app/models/ITask'
 import { Card } from 'semantic-ui-react';
 import { observer } from 'mobx-react';
 import { Draggable } from 'react-beautiful-dnd';
-
+import Moment from 'react-moment';
+ 
  
 interface IProps {
     key: number,
@@ -24,7 +25,11 @@ const TaskPriorityCard : React.FC<IProps> = ({item, key, index}) => {
                     <Card.Content>
                         {<a className={"right floated ui blue circular label big"}>{item.order}</a>}
                         <Card.Header>{item.title}</Card.Header>
-                        <Card.Meta>{item.deadline}</Card.Meta>
+                        <Card.Meta>
+                        <Moment format="YYYY/MM/DD">
+                            {String(item.deadline)}
+                        </Moment>
+                        </Card.Meta>
                         <Card.Description>
                             {item.description}
                         </Card.Description>
@@ -32,10 +37,7 @@ const TaskPriorityCard : React.FC<IProps> = ({item, key, index}) => {
                     </Card>
 
                 </div>
-            )
-
-            }
-            
+            )}
         </Draggable>
             
     )

@@ -11,6 +11,10 @@ import {
 import { RouteComponentProps } from "react-router";
 import TaskStore from "../../app/stores/taskStore";
 import { observer } from "mobx-react-lite";
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { runInAction } from "mobx";
+
 
 interface DetailParams {
   id: string;
@@ -34,14 +38,24 @@ const TaskForm: React.FC<RouteComponentProps<DetailParams>> = ({
   } = taskStore;
 
   useEffect(() => {
-    console.log("afdsa");
     if (match.params.id) {
       let id = Number(match.params.id);
       console.log(id);
       if (isNaN(id)) {
         history.push("/notfound");
       } else {
-        loadTask(id).then(() => selectedTask && setTask(selectedTask));
+        loadTask(id).then(() => {
+          if(selectedTask) {
+            console.log(selectedTask);
+            runInAction(() => {
+              setTask({ ...task, ['deadline']: new Date(selectedTask.deadline)});
+              selectedTask.deadline = new Date();
+              setTask(selectedTask);
+              selectedTask.deadline = task.deadline;
+            })
+            
+            
+         }});
       }
       return () => {
         clearTask();
@@ -57,7 +71,7 @@ const TaskForm: React.FC<RouteComponentProps<DetailParams>> = ({
     id: 0,
     title: "",
     description: "",
-    deadline: "",
+    deadline: new Date(),
     stateId: 0,
     order: 0
   });
@@ -76,7 +90,14 @@ const TaskForm: React.FC<RouteComponentProps<DetailParams>> = ({
     }
   };
 
+  const dateChange = (date: Date | null) => {
+    if(date) {
+      setTask({ ...task, ["deadline"]: date});
+    }
+  }
+
   const handleSubmit = () => {
+    
     editTask(task).then(() => history.push("/tasks"));
   }
 
@@ -86,25 +107,34 @@ const TaskForm: React.FC<RouteComponentProps<DetailParams>> = ({
         <Segment clearing style={{ marginTop: "3.5em" }}>
           <Form onSubmit={handleSubmit}>
             <Form.Input
+              maxLength="50"
+              required
               onChange={handleInputChange}
               name="title"
               placeholder="Title"
               value={task.title}
             />
             <Form.TextArea
+              required
+              maxLength="500"
               onChange={handleInputChange}
               name="description"
               placeholder="Description"
               value={task.description}
             />
-            <Form.Input
-              onChange={handleInputChange}
+
+            <br></br>
+
+            <DatePicker
+              required
+              selected={task.deadline || new Date()}
+              onChange={date => dateChange(date)}
               name="deadline"
-              placeholder="Deadline"
-              type="date"
-              value={task.deadline}
             />
+            <br></br>
+            <br></br>
             <Dropdown
+              required
               placeholder="State"
               selection
               options={statesForDropdown}

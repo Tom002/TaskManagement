@@ -15,30 +15,22 @@ const NavBar = () => {
           exact
           to='/tasks'
         />
-        <Menu.Item>
-          <Button 
-            color="yellow"
-            content='Modify Priority'
-            as={NavLink}
-            to='/tasks/priority'
-          />
-        </Menu.Item>
-        <Menu.Item>
-          <Button
-            positive
-            content='Add Task'
-            as={NavLink}
-            to='/createTask'
-          />
-        </Menu.Item>
-        <Menu.Item>
-          <Button 
-            positive
-            content='Add Status'
-            to='/createState'
-            as={NavLink}
-          />
-        </Menu.Item>
+        <Menu.Item
+          name='Modify Priority'
+          as={NavLink}
+          exact
+          to='/tasks/priority'
+        />
+        <Menu.Item
+          content='Add Task'
+          as={NavLink}
+          to='/createTask'
+        />
+        <Menu.Item
+          content='Add Status'
+          to='/createState'
+          as={NavLink}
+        />
       </Container>
     </Menu>
     )
